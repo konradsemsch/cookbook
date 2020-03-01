@@ -1,0 +1,83 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+# cookbook
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of cookbook is to ...
+
+## Installation
+
+You can install the development version of cookbook from [Github](https://github.com/konradsemsch/cookbook) with:
+
+``` r
+devtools::install_github("konradsemsch/cookbook")
+```
+
+## Example usage
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+
+library(cookbook)
+library(modeldata)
+library(tidymodels)
+library(workflows)
+
+data("okc")
+colnames(okc) <- tolower(names(okc))
+
+okc <- sample_n(okc, 1000)
+
+strata <- "class"
+split <- initial_split(okc, prop = 0.8, strata = strata)
+
+train <- training(split)
+test <- testing(split)
+
+cv <- vfold_cv(
+  train,
+  v = 5,
+  repeats = 1,
+  strata = strata
+)
+
+# 1) Create a base recipe where training data is provided
+# and roles for all variables are defined
+recipe_base <- train %>%
+  recipe() %>%
+  update_role(class, new_role = "outcome") %>%
+  update_role(-one_of("class"), new_role = "predictors")
+
+# 2) Pass your base recipe into the apply_recipe function
+# and provide the recipe blueprint to bind to it
+recipe <- recipe_base %>%
+  add_blueprint("v1")
+
+# 3) Run your model as you normally would (single blueprint)
+model <- logistic_reg() %>%
+  set_mode("classification") %>%
+  set_engine("glm")
+
+workflow <- workflow() %>%
+  add_recipe(recipe) %>%
+  add_model(model) %>%
+  fit(data = train)
+
+```
+
+
